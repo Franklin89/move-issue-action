@@ -78,6 +78,8 @@ export async function run(): Promise<void> {
         github_token
       )
 
+      core.info(`Cards: ${JSON.stringify(cards)}`)
+
       core.info(`Found ${cards.node.projectItems.edges.length} cards`)
 
       for (const node of cards.node.projectItems.edges) {

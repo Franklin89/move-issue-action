@@ -6770,6 +6770,7 @@ async function run() {
             const issueId = await queries.getIssueId(issue, github_token);
             core.info(`Found issue #${issue} with id ${issueId.repository.issue.id}`);
             const cards = await queries.getCardsForIssue(issueId.repository.issue.id, github_token);
+            core.info(`Cards: ${JSON.stringify(cards)}`);
             core.info(`Found ${cards.node.projectItems.edges.length} cards`);
             for (const node of cards.node.projectItems.edges) {
                 const columns = await queries.getColumnsForProject(node.node.project.id, github_token);
