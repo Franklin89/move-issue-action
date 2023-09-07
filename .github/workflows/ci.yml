@@ -7,8 +7,7 @@ on:
       - main
       - 'releases/*'
 
-permissions: write-all
-
+      
 jobs:
   test-typescript:
     name: TypeScript Tests
@@ -41,7 +40,8 @@ jobs:
   test-action:
     name: GitHub Actions Test
     runs-on: ubuntu-latest
-
+    permissions: write-all
+    
     steps:
       - name: Checkout
         id: checkout
@@ -52,6 +52,6 @@ jobs:
         uses: ./
         with:
           owner: 'Franklin89'
-          repo: 'cicd-automation'
+          repo: 'move-issue-action'
           github_token: ${{ secrets.GITHUB_TOKEN }}
           since_tag: 'latest'

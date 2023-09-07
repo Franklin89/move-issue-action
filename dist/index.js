@@ -6722,6 +6722,8 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.run = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const rest_1 = __nccwpck_require__(5375);
+const queries = __importStar(__nccwpck_require__(2840));
+const mutations = __importStar(__nccwpck_require__(4525));
 const restApi = __importStar(__nccwpck_require__(1197));
 /**
  * The main function for the action.
@@ -6732,8 +6734,9 @@ async function run() {
         const owner = core.getInput('owner');
         const repo = core.getInput('repo');
         const since_tag = core.getInput('since_tag');
+        const github_token = core.getInput('github_token');
         const octokit = new rest_1.Octokit({
-            auth: core.getInput('github_token')
+            auth: github_token
         });
         // Fetch commits from the main branch
         const commits = await restApi.getCommitsSinceTag(octokit, owner, repo, since_tag);
@@ -6747,6 +6750,33 @@ async function run() {
             }
         }
         core.info(`Found ${prNumbers.length} PRs in main since tag ${since_tag}: [${prNumbers.join(', ')}]`);
+        // Fetch PRs and list associated issues (assuming the PR description has "Fixes #issue_number")
+        const issues = [];
+        for (const prNumber of prNumbers) {
+            const pr = await octokit.pulls.get({
+                owner,
+                repo,
+                pull_number: prNumber
+            });
+            if (pr.data.body) {
+                const issueMatch = pr.data.body.match(/(?:closes|fixes|resolved) #(\d+)/i);
+                if (issueMatch) {
+                    issues.push(parseInt(issueMatch[1], 10));
+                }
+            }
+        }
+        core.info(`Found ${issues.length} issues associated with PRs in main since tag ${since_tag}: [${issues.join(', ')}]`);
+        for (const issue of issues) {
+            const issueId = await queries.getIssueId(issue, github_token);
+            const cards = await queries.getCardsForIssue(issueId.repository.issue.id, github_token);
+            for (const node of cards.node.projectItems.edges) {
+                const columns = await queries.getColumnsForProject(node.node.project.id, github_token);
+                const statusField = columns.node.fields.nodes.find((node) => node.name === 'Status'); // TODO: Make this configurable
+                const statusFieldValue = statusField.options.find((node) => node.name === 'Released'); // TODO: Make this configurable
+                await mutations.moveCardToColumn(node.node.project.id, node.node.id, statusField.id, statusFieldValue.id, github_token);
+                core.info(`Moved issue #${issue} to column: ${statusFieldValue.name} in project ${node.node.project.title} (${node.node.project.id})`);
+            }
+        }
     }
     catch (error) {
         // Fail the workflow run if an error occurs
@@ -6761,6 +6791,125 @@ run();
 
 /***/ }),
 
+/***/ 4525:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.moveCardToColumn = void 0;
+const graphql_1 = __nccwpck_require__(8467);
+const updateCardColumnMutation = `mutation($projectId: ID!, $cardId: ID!, $fieldId: ID!, $fieldValue: String) {
+    updateProjectV2ItemFieldValue(
+      input: {projectId: $projectId, itemId: $cardId, fieldId: $fieldId, value: {singleSelectOptionId: $fieldValue}}
+    ) {
+      clientMutationId
+    }
+  }`;
+async function moveCardToColumn(projectId, cardId, fieldId, fieldValue, accessToken) {
+    return (0, graphql_1.graphql)(updateCardColumnMutation, {
+        projectId: projectId,
+        cardId: cardId,
+        fieldId: fieldId,
+        fieldValue: fieldValue,
+        headers: {
+            authorization: `bearer ${accessToken}`
+        }
+    });
+}
+exports.moveCardToColumn = moveCardToColumn;
+
+
+/***/ }),
+
+/***/ 2840:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getColumnsForProject = exports.getIssueId = exports.getCardsForIssue = void 0;
+const graphql_1 = __nccwpck_require__(8467);
+const issueIdsForIssue = `query($issueNumber: Int!) {
+  repository(owner:"franklin89", name:"cicd-automation") {
+    issue (number: $issueNumber) {
+      id
+    }
+  }
+}`;
+const cardIdsForIssue = `query($issueId: ID!) {
+  node(id: $issueId) {
+      ... on Issue {
+        projectItems(first: 100) {
+          edges {
+            node {
+              id
+              fieldValueByName(name: "Status") {
+                __typename
+                ... on ProjectV2ItemFieldSingleSelectValue {
+                  name
+                  description
+                }
+              }
+              project {
+                id
+                title
+              }
+            }
+          }
+        }
+      }
+    }
+  }`;
+const columnsForProject = `query($projectId: ID!) {
+  node(id: $projectId) {
+    ... on ProjectV2 {
+      fields(first: 20) {
+        nodes {
+          ... on ProjectV2SingleSelectField  {
+            id
+            name
+            options {
+              id
+              name
+            }
+          }
+        }
+      }
+    }
+  }
+}`;
+async function getCardsForIssue(issueId, accessToken) {
+    return (0, graphql_1.graphql)(cardIdsForIssue, {
+        issueId: issueId,
+        headers: {
+            authorization: `bearer ${accessToken}`
+        }
+    });
+}
+exports.getCardsForIssue = getCardsForIssue;
+async function getIssueId(issueNumber, accessToken) {
+    return (0, graphql_1.graphql)(issueIdsForIssue, {
+        issueNumber: issueNumber,
+        headers: {
+            authorization: `bearer ${accessToken}`
+        }
+    });
+}
+exports.getIssueId = getIssueId;
+async function getColumnsForProject(projectId, accessToken) {
+    return (0, graphql_1.graphql)(columnsForProject, {
+        projectId: projectId,
+        headers: {
+            authorization: `bearer ${accessToken}`
+        }
+    });
+}
+exports.getColumnsForProject = getColumnsForProject;
+
+
+/***/ }),
+
 /***/ 1197:
 /***/ ((__unused_webpack_module, exports) => {
 
@@ -6769,32 +6918,35 @@ run();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getCommitsSinceTag = void 0;
 async function getCommitsSinceTag(octokit, owner, repo, sinceTag) {
-    // First get the commit sha for the tag
-    const { data: tag } = await octokit.git.getRef({
+    // Get the commit SHA for the tag
+    const tagRef = await octokit.git.getRef({
         owner,
         repo,
         ref: `tags/${sinceTag}`
     });
-    const tagSha = tag.object.sha;
-    // Now fetch the commits since that tag
-    const commits = [];
+    const tagCommitSha = tagRef.data.object.sha;
+    let commitsAfterTag = [];
     let page = 1;
     while (true) {
-        const { data: currentCommits } = await octokit.repos.listCommits({
+        const commits = await octokit.repos.listCommits({
             owner,
             repo,
-            since: tagSha,
             per_page: 100,
             page: page
         });
-        if (currentCommits.length === 0)
+        if (!commits.data.length) {
             break;
-        commits.push(...currentCommits);
-        if (currentCommits.length < 100)
-            break;
+        }
+        for (let commit of commits.data) {
+            if (commit.sha === tagCommitSha) {
+                // If the current commit SHA matches the tag's commit SHA, stop the process
+                return commitsAfterTag;
+            }
+            commitsAfterTag.push(commit);
+        }
         page++;
     }
-    return commits;
+    return commitsAfterTag;
 }
 exports.getCommitsSinceTag = getCommitsSinceTag;
 

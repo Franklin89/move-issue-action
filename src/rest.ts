@@ -6,36 +6,41 @@ export async function getCommitsSinceTag(
   repo: string,
   sinceTag: string
 ) {
-  // First get the commit sha for the tag
-  const { data: tag } = await octokit.git.getRef({
+  // Get the commit SHA for the tag
+  const tagRef = await octokit.git.getRef({
     owner,
     repo,
     ref: `tags/${sinceTag}`
   })
 
-  const tagSha = tag.object.sha
+  const tagCommitSha = tagRef.data.object.sha
 
-  // Now fetch the commits since that tag
-  const commits: any[] = []
+  let commitsAfterTag: Array<any> = []
   let page = 1
 
   while (true) {
-    const { data: currentCommits } = await octokit.repos.listCommits({
+    const commits = await octokit.repos.listCommits({
       owner,
       repo,
-      since: tagSha,
       per_page: 100,
       page: page
     })
 
-    if (currentCommits.length === 0) break
+    if (!commits.data.length) {
+      break
+    }
 
-    commits.push(...currentCommits)
+    for (let commit of commits.data) {
+      if (commit.sha === tagCommitSha) {
+        // If the current commit SHA matches the tag's commit SHA, stop the process
+        return commitsAfterTag
+      }
 
-    if (currentCommits.length < 100) break
+      commitsAfterTag.push(commit)
+    }
 
     page++
   }
 
-  return commits
+  return commitsAfterTag
 }
