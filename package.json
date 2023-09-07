@@ -24,6 +24,7 @@
     "node": ">=16"
   },
   "scripts": {
+    "local": "ts-node src/local.ts",
     "bundle": "npm run format:write && npm run package",
     "format:write": "prettier --write **/*.ts",
     "format:check": "prettier --check **/*.ts",
@@ -54,6 +55,7 @@
     "prettier": "^3.0.3",
     "prettier-eslint": "^15.0.1",
     "ts-jest": "^29.1.1",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "ts-node": "^10.9.1"
   }
 }

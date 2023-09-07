@@ -31,10 +31,10 @@ export async function getCommitsSinceTag(
     }
 
     for (let commit of commits.data) {
-      if (commit.sha === tagCommitSha) {
-        // If the current commit SHA matches the tag's commit SHA, stop the process
-        return commitsAfterTag
-      }
+      // if (commit.sha === tagCommitSha) {
+      //   // If the current commit SHA matches the tag's commit SHA, stop the process
+      //   return commitsAfterTag
+      // }
 
       commitsAfterTag.push(commit)
     }
