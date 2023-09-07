@@ -1,0 +1,24 @@
+name: "Move Issues Action"
+description: ""
+author: "Franklin89"
+
+# Define your inputs here.
+inputs:
+  owner:
+    description: "The owner of the repository"
+    required: true
+  repo:
+    description: "The repository name"
+    required: false
+    default: ${{ github.repository }}
+  github_token:
+    description: "GitHub token to move issues"
+    required: true
+  since_tag:
+    description: "Tag used since when the last release was created"
+    required: false
+    default: "latest"
+
+runs:
+  using: node16
+  main: dist/index.js
