@@ -6733,7 +6733,7 @@ async function run() {
         const repo = core.getInput('repo');
         const since_tag = core.getInput('since_tag');
         const octokit = new rest_1.Octokit({
-            auth: core.getInput('github_token'),
+            auth: core.getInput('github_token')
         });
         // Fetch commits from the main branch
         const commits = await restApi.getCommitsSinceTag(octokit, owner, repo, since_tag);

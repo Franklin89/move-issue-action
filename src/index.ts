@@ -15,7 +15,7 @@ export async function run(): Promise<void> {
     const since_tag: string = core.getInput('since_tag');
 
     const octokit = new Octokit({
-      auth: core.getInput('github_token'),
+      auth: core.getInput('github_token')
     });
 
     // Fetch commits from the main branch

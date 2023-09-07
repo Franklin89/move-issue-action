@@ -20,5 +20,5 @@ inputs:
     default: "latest"
 
 runs:
-  using: node16
+  using: node18
   main: dist/index.js
