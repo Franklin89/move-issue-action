@@ -6769,6 +6769,7 @@ async function run() {
         for (const issue of issues) {
             const issueId = await queries.getIssueId(issue, github_token);
             const cards = await queries.getCardsForIssue(issueId.repository.issue.id, github_token);
+            core.info(`Found ${cards.node.projectItems.edges.length} cards`);
             for (const node of cards.node.projectItems.edges) {
                 const columns = await queries.getColumnsForProject(node.node.project.id, github_token);
                 const statusField = columns.node.fields.nodes.find((node) => node.name === 'Status'); // TODO: Make this configurable

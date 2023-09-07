@@ -75,6 +75,8 @@ export async function run(): Promise<void> {
         github_token
       )
 
+      core.info(`Found ${cards.node.projectItems.edges.length} cards`)
+
       for (const node of cards.node.projectItems.edges) {
         const columns: any = await queries.getColumnsForProject(
           node.node.project.id,
