@@ -70,6 +70,11 @@ export async function run(): Promise<void> {
 
     for (const issue of issues) {
       const issueId: any = await queries.getIssueId(issue, github_token)
+
+      core.info(
+        `Found issue #${issue} in repository ${issueId.repository.issue.id}`
+      )
+
       const cards: any = await queries.getCardsForIssue(
         issueId.repository.issue.id,
         github_token
