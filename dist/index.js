@@ -6768,7 +6768,7 @@ async function run() {
         core.info(`Found ${issues.length} issues associated with PRs in main since tag ${since_tag}: [${issues.join(', ')}]`);
         for (const issue of issues) {
             const issueId = await queries.getIssueId(issue, github_token);
-            core.info(`Found issue #${issue} in repository ${issueId.repository.issue.id}`);
+            core.info(`Found issue #${issue} with id ${issueId.repository.issue.id}`);
             const cards = await queries.getCardsForIssue(issueId.repository.issue.id, github_token);
             core.info(`Found ${cards.node.projectItems.edges.length} cards`);
             for (const node of cards.node.projectItems.edges) {

@@ -52,7 +52,7 @@ const columnsForProject = `query($projectId: ID!) {
   }
 }`
 
-export async function getCardsForIssue(issueId: any, accessToken: string) {
+export async function getCardsForIssue(issueId: string, accessToken: string) {
   return graphql(cardIdsForIssue, {
     issueId: issueId,
     headers: {
