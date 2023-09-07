@@ -1,4 +1,4 @@
-import { graphql } from "@octokit/graphql";
+import { graphql } from '@octokit/graphql'
 
 const issueIdsForIssue = `query($issueNumber: Int!) {
   repository(owner:"franklin89", name:"cicd-automation") {
@@ -6,7 +6,7 @@ const issueIdsForIssue = `query($issueNumber: Int!) {
       id
     }
   }
-}`;
+}`
 
 const cardIdsForIssue = `query($issueId: ID!) {
   node(id: $issueId) {
@@ -31,7 +31,7 @@ const cardIdsForIssue = `query($issueId: ID!) {
         }
       }
     }
-  }`;
+  }`
 
 const columnsForProject = `query($projectId: ID!) {
   node(id: $projectId) {
@@ -56,25 +56,28 @@ export async function getCardsForIssue(issueId: any, accessToken: string) {
   return graphql(cardIdsForIssue, {
     issueId: issueId,
     headers: {
-      authorization: `bearer ${accessToken}`,
+      authorization: `bearer ${accessToken}`
     }
-  });
+  })
 }
 
 export async function getIssueId(issueNumber: number, accessToken: string) {
   return graphql(issueIdsForIssue, {
     issueNumber: issueNumber,
     headers: {
-      authorization: `bearer ${accessToken}`,
+      authorization: `bearer ${accessToken}`
     }
-  });
+  })
 }
 
-export async function getColumnsForProject(projectId: string, accessToken: string) {
+export async function getColumnsForProject(
+  projectId: string,
+  accessToken: string
+) {
   return graphql(columnsForProject, {
     projectId: projectId,
     headers: {
-      authorization: `bearer ${accessToken}`,
+      authorization: `bearer ${accessToken}`
     }
-  });
+  })
 }

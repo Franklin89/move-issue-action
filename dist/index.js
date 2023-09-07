@@ -6746,7 +6746,7 @@ async function run() {
                 prNumbers.push(parseInt(prMatch[1], 10));
             }
         }
-        core.info(`Found ${prNumbers.length} PRs in main since tag ${since_tag}: [${prNumbers.join(", ")}]`);
+        core.info(`Found ${prNumbers.length} PRs in main since tag ${since_tag}: [${prNumbers.join(', ')}]`);
     }
     catch (error) {
         // Fail the workflow run if an error occurs

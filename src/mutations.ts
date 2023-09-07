@@ -1,4 +1,4 @@
-import { graphql } from "@octokit/graphql";
+import { graphql } from '@octokit/graphql'
 
 const updateCardColumnMutation = `mutation($projectId: ID!, $cardId: ID!, $fieldId: ID!, $fieldValue: String) {
     updateProjectV2ItemFieldValue(
@@ -6,16 +6,22 @@ const updateCardColumnMutation = `mutation($projectId: ID!, $cardId: ID!, $field
     ) {
       clientMutationId
     }
-  }`;
+  }`
 
-export async function moveCardToColumn(projectId: string, cardId: string, fieldId: string, fieldValue: string, accessToken: string) {
-    return graphql(updateCardColumnMutation, {
-        projectId: projectId,
-        cardId: cardId,
-        fieldId: fieldId,
-        fieldValue: fieldValue,
-        headers: {
-            authorization: `bearer ${accessToken}`,
-        }
-    });
+export async function moveCardToColumn(
+  projectId: string,
+  cardId: string,
+  fieldId: string,
+  fieldValue: string,
+  accessToken: string
+) {
+  return graphql(updateCardColumnMutation, {
+    projectId: projectId,
+    cardId: cardId,
+    fieldId: fieldId,
+    fieldValue: fieldValue,
+    headers: {
+      authorization: `bearer ${accessToken}`
+    }
+  })
 }
