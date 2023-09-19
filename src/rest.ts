@@ -4,7 +4,8 @@ export async function getCommitsSinceTag(
   octokit: Octokit,
   owner: string,
   repo: string,
-  sinceTag: string
+  sinceTag: string,
+  branch: string
 ) {
   // Get the commit SHA for the tag
   const tagRef = await octokit.git.getRef({
@@ -23,7 +24,8 @@ export async function getCommitsSinceTag(
       owner,
       repo,
       per_page: 100,
-      page: page
+      page: page,
+      sha: branch
     })
 
     if (!commits.data.length) {

@@ -1,7 +1,7 @@
 import { graphql } from '@octokit/graphql'
 
-const issueIdsForIssue = `query($issueNumber: Int!) {
-  repository(owner:"franklin89", name:"cicd-automation") {
+const issueIdsForIssue = `query($issueNumber: Int!, $owner: String!, $repo: String!) {
+  repository(owner: $owner, name:$repo) {
     issue (number: $issueNumber) {
       id
     }
@@ -61,9 +61,11 @@ export async function getCardsForIssue(issueId: string, accessToken: string) {
   })
 }
 
-export async function getIssueId(issueNumber: number, accessToken: string) {
+export async function getIssueId(issueNumber: number, owner: string, repo: string, accessToken: string) {
   return graphql(issueIdsForIssue, {
     issueNumber: issueNumber,
+    owner: owner,
+    repo: repo,
     headers: {
       authorization: `bearer ${accessToken}`
     }

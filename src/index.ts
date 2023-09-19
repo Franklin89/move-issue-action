@@ -13,6 +13,7 @@ export async function run(): Promise<void> {
     const owner: string = core.getInput('owner')
     const repo: string = core.getInput('repo')
     const since_tag: string = core.getInput('since_tag')
+    const release_branch: string = core.getInput('release_branch')
     const github_token: string = core.getInput('github_token')
 
     const octokit = new Octokit({
@@ -24,21 +25,21 @@ export async function run(): Promise<void> {
       octokit,
       owner,
       repo,
-      since_tag
+      since_tag,
+      release_branch
     )
     core.info(`Found ${commits.length} commits since tag ${since_tag}`)
 
     // Filter and extract PR numbers
     const prNumbers: number[] = []
     for (const commit of commits) {
-      const prMatch = commit.commit.message.match(/\(#(\d+)\)$/)
+      const prMatch = commit.commit.message.match(/\(#(\d+)\)$/m)
       if (prMatch) {
         prNumbers.push(parseInt(prMatch[1], 10))
       }
     }
     core.info(
-      `Found ${
-        prNumbers.length
+      `Found ${prNumbers.length
       } PRs in main since tag ${since_tag}: [${prNumbers.join(', ')}]`
     )
 
@@ -53,7 +54,7 @@ export async function run(): Promise<void> {
 
       if (pr.data.body) {
         const issueMatch = pr.data.body!.match(
-          /(?:closes|fixes|resolved) #(\d+)/i
+          /(?:closes|fixes|resolved)\s+(?:[\w-]+\/[\w-]+)?#\s*(\d+)/i
         )
         if (issueMatch) {
           issues.push(parseInt(issueMatch[1], 10))
@@ -61,15 +62,14 @@ export async function run(): Promise<void> {
       }
     }
     core.info(
-      `Found ${
-        issues.length
+      `Found ${issues.length
       } issues associated with PRs in main since tag ${since_tag}: [${issues.join(
         ', '
       )}]`
     )
 
     for (const issue of issues) {
-      const issueId: any = await queries.getIssueId(issue, github_token)
+      const issueId: any = await queries.getIssueId(issue, owner, 'issues', github_token)
 
       core.info(`Found issue #${issue} with id ${issueId.repository.issue.id}`)
 
@@ -91,16 +91,16 @@ export async function run(): Promise<void> {
           (node: any) => node.name === 'Status'
         ) // TODO: Make this configurable
         const statusFieldValue: any = statusField.options.find(
-          (node: any) => node.name === 'Released'
+          (node: any) => node.name.startsWith('Done')
         ) // TODO: Make this configurable
 
-        await mutations.moveCardToColumn(
-          node.node.project.id,
-          node.node.id,
-          statusField.id,
-          statusFieldValue.id,
-          github_token
-        )
+        // await mutations.moveCardToColumn(
+        //   node.node.project.id,
+        //   node.node.id,
+        //   statusField.id,
+        //   statusFieldValue.id,
+        //   github_token
+        // )
 
         core.info(
           `Moved issue #${issue} to column: ${statusFieldValue.name} in project ${node.node.project.title} (${node.node.project.id})`
