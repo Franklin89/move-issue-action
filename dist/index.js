@@ -6723,7 +6723,6 @@ exports.run = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const rest_1 = __nccwpck_require__(5375);
 const queries = __importStar(__nccwpck_require__(2840));
-const mutations = __importStar(__nccwpck_require__(4525));
 const restApi = __importStar(__nccwpck_require__(1197));
 /**
  * The main function for the action.
@@ -6734,17 +6733,18 @@ async function run() {
         const owner = core.getInput('owner');
         const repo = core.getInput('repo');
         const since_tag = core.getInput('since_tag');
+        const release_branch = core.getInput('release_branch');
         const github_token = core.getInput('github_token');
         const octokit = new rest_1.Octokit({
             auth: github_token
         });
         // Fetch commits from the main branch
-        const commits = await restApi.getCommitsSinceTag(octokit, owner, repo, since_tag);
+        const commits = await restApi.getCommitsSinceTag(octokit, owner, repo, since_tag, release_branch);
         core.info(`Found ${commits.length} commits since tag ${since_tag}`);
         // Filter and extract PR numbers
         const prNumbers = [];
         for (const commit of commits) {
-            const prMatch = commit.commit.message.match(/\(#(\d+)\)$/);
+            const prMatch = commit.commit.message.match(/\(#(\d+)\)$/m);
             if (prMatch) {
                 prNumbers.push(parseInt(prMatch[1], 10));
             }
@@ -6759,7 +6759,7 @@ async function run() {
                 pull_number: prNumber
             });
             if (pr.data.body) {
-                const issueMatch = pr.data.body.match(/(?:closes|fixes|resolved) #(\d+)/i);
+                const issueMatch = pr.data.body.match(/(?:closes|fixes|resolved)\s+(?:[\w-]+\/[\w-]+)?#\s*(\d+)/i);
                 if (issueMatch) {
                     issues.push(parseInt(issueMatch[1], 10));
                 }
@@ -6767,7 +6767,7 @@ async function run() {
         }
         core.info(`Found ${issues.length} issues associated with PRs in main since tag ${since_tag}: [${issues.join(', ')}]`);
         for (const issue of issues) {
-            const issueId = await queries.getIssueId(issue, github_token);
+            const issueId = await queries.getIssueId(issue, owner, 'issues', github_token);
             core.info(`Found issue #${issue} with id ${issueId.repository.issue.id}`);
             const cards = await queries.getCardsForIssue(issueId.repository.issue.id, github_token);
             core.info(`Cards: ${JSON.stringify(cards)}`);
@@ -6775,8 +6775,14 @@ async function run() {
             for (const node of cards.node.projectItems.edges) {
                 const columns = await queries.getColumnsForProject(node.node.project.id, github_token);
                 const statusField = columns.node.fields.nodes.find((node) => node.name === 'Status'); // TODO: Make this configurable
-                const statusFieldValue = statusField.options.find((node) => node.name === 'Released'); // TODO: Make this configurable
-                await mutations.moveCardToColumn(node.node.project.id, node.node.id, statusField.id, statusFieldValue.id, github_token);
+                const statusFieldValue = statusField.options.find((node) => node.name.startsWith('Done')); // TODO: Make this configurable
+                // await mutations.moveCardToColumn(
+                //   node.node.project.id,
+                //   node.node.id,
+                //   statusField.id,
+                //   statusFieldValue.id,
+                //   github_token
+                // )
                 core.info(`Moved issue #${issue} to column: ${statusFieldValue.name} in project ${node.node.project.title} (${node.node.project.id})`);
             }
         }
@@ -6794,37 +6800,6 @@ run();
 
 /***/ }),
 
-/***/ 4525:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.moveCardToColumn = void 0;
-const graphql_1 = __nccwpck_require__(8467);
-const updateCardColumnMutation = `mutation($projectId: ID!, $cardId: ID!, $fieldId: ID!, $fieldValue: String) {
-    updateProjectV2ItemFieldValue(
-      input: {projectId: $projectId, itemId: $cardId, fieldId: $fieldId, value: {singleSelectOptionId: $fieldValue}}
-    ) {
-      clientMutationId
-    }
-  }`;
-async function moveCardToColumn(projectId, cardId, fieldId, fieldValue, accessToken) {
-    return (0, graphql_1.graphql)(updateCardColumnMutation, {
-        projectId: projectId,
-        cardId: cardId,
-        fieldId: fieldId,
-        fieldValue: fieldValue,
-        headers: {
-            authorization: `bearer ${accessToken}`
-        }
-    });
-}
-exports.moveCardToColumn = moveCardToColumn;
-
-
-/***/ }),
-
 /***/ 2840:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
@@ -6833,8 +6808,8 @@ exports.moveCardToColumn = moveCardToColumn;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getColumnsForProject = exports.getIssueId = exports.getCardsForIssue = void 0;
 const graphql_1 = __nccwpck_require__(8467);
-const issueIdsForIssue = `query($issueNumber: Int!) {
-  repository(owner:"franklin89", name:"cicd-automation") {
+const issueIdsForIssue = `query($issueNumber: Int!, $owner: String!, $repo: String!) {
+  repository(owner: $owner, name:$repo) {
     issue (number: $issueNumber) {
       id
     }
@@ -6891,9 +6866,11 @@ async function getCardsForIssue(issueId, accessToken) {
     });
 }
 exports.getCardsForIssue = getCardsForIssue;
-async function getIssueId(issueNumber, accessToken) {
+async function getIssueId(issueNumber, owner, repo, accessToken) {
     return (0, graphql_1.graphql)(issueIdsForIssue, {
         issueNumber: issueNumber,
+        owner: owner,
+        repo: repo,
         headers: {
             authorization: `bearer ${accessToken}`
         }
@@ -6920,7 +6897,7 @@ exports.getColumnsForProject = getColumnsForProject;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getCommitsSinceTag = void 0;
-async function getCommitsSinceTag(octokit, owner, repo, sinceTag) {
+async function getCommitsSinceTag(octokit, owner, repo, sinceTag, branch) {
     // Get the commit SHA for the tag
     const tagRef = await octokit.git.getRef({
         owner,
@@ -6935,7 +6912,8 @@ async function getCommitsSinceTag(octokit, owner, repo, sinceTag) {
             owner,
             repo,
             per_page: 100,
-            page: page
+            page: page,
+            sha: branch
         });
         if (!commits.data.length) {
             break;

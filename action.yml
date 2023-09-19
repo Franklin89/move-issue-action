@@ -18,6 +18,10 @@ inputs:
     description: "Tag used since when the last release was created"
     required: false
     default: "latest"
+  release_branch:
+    description: "Tag used since when the last release was created"
+    required: false
+    default: "main"
 
 runs:
   using: node20

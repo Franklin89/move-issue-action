@@ -39,7 +39,8 @@ export async function run(): Promise<void> {
       }
     }
     core.info(
-      `Found ${prNumbers.length
+      `Found ${
+        prNumbers.length
       } PRs in main since tag ${since_tag}: [${prNumbers.join(', ')}]`
     )
 
@@ -62,14 +63,20 @@ export async function run(): Promise<void> {
       }
     }
     core.info(
-      `Found ${issues.length
+      `Found ${
+        issues.length
       } issues associated with PRs in main since tag ${since_tag}: [${issues.join(
         ', '
       )}]`
     )
 
     for (const issue of issues) {
-      const issueId: any = await queries.getIssueId(issue, owner, 'issues', github_token)
+      const issueId: any = await queries.getIssueId(
+        issue,
+        owner,
+        'issues',
+        github_token
+      )
 
       core.info(`Found issue #${issue} with id ${issueId.repository.issue.id}`)
 
@@ -90,8 +97,8 @@ export async function run(): Promise<void> {
         const statusField: any = columns.node.fields.nodes.find(
           (node: any) => node.name === 'Status'
         ) // TODO: Make this configurable
-        const statusFieldValue: any = statusField.options.find(
-          (node: any) => node.name.startsWith('Done')
+        const statusFieldValue: any = statusField.options.find((node: any) =>
+          node.name.startsWith('Done')
         ) // TODO: Make this configurable
 
         // await mutations.moveCardToColumn(

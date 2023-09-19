@@ -61,7 +61,12 @@ export async function getCardsForIssue(issueId: string, accessToken: string) {
   })
 }
 
-export async function getIssueId(issueNumber: number, owner: string, repo: string, accessToken: string) {
+export async function getIssueId(
+  issueNumber: number,
+  owner: string,
+  repo: string,
+  accessToken: string
+) {
   return graphql(issueIdsForIssue, {
     issueNumber: issueNumber,
     owner: owner,
