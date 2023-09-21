@@ -6723,7 +6723,6 @@ exports.run = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const rest_1 = __nccwpck_require__(5375);
 const queries = __importStar(__nccwpck_require__(2840));
-const mutations = __importStar(__nccwpck_require__(4525));
 const restApi = __importStar(__nccwpck_require__(1197));
 /**
  * The main function for the action.
@@ -6777,7 +6776,13 @@ async function run() {
                 const columns = await queries.getColumnsForProject(node.node.project.id, github_token);
                 const statusField = columns.node.fields.nodes.find((node) => node.name === 'Status'); // TODO: Make this configurable
                 const statusFieldValue = statusField.options.find((node) => node.name.startsWith('Done')); // TODO: Make this configurable
-                await mutations.moveCardToColumn(node.node.project.id, node.node.id, statusField.id, statusFieldValue.id, github_token);
+                // await mutations.moveCardToColumn(
+                //   node.node.project.id,
+                //   node.node.id,
+                //   statusField.id,
+                //   statusFieldValue.id,
+                //   github_token
+                // )
                 core.info(`Moved issue #${issue} to column: ${statusFieldValue.name} in project ${node.node.project.title} (${node.node.project.id})`);
             }
         }
@@ -6791,37 +6796,6 @@ async function run() {
 exports.run = run;
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 run();
-
-
-/***/ }),
-
-/***/ 4525:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.moveCardToColumn = void 0;
-const graphql_1 = __nccwpck_require__(8467);
-const updateCardColumnMutation = `mutation($projectId: ID!, $cardId: ID!, $fieldId: ID!, $fieldValue: String) {
-    updateProjectV2ItemFieldValue(
-      input: {projectId: $projectId, itemId: $cardId, fieldId: $fieldId, value: {singleSelectOptionId: $fieldValue}}
-    ) {
-      clientMutationId
-    }
-  }`;
-async function moveCardToColumn(projectId, cardId, fieldId, fieldValue, accessToken) {
-    return (0, graphql_1.graphql)(updateCardColumnMutation, {
-        projectId: projectId,
-        cardId: cardId,
-        fieldId: fieldId,
-        fieldValue: fieldValue,
-        headers: {
-            authorization: `bearer ${accessToken}`
-        }
-    });
-}
-exports.moveCardToColumn = moveCardToColumn;
 
 
 /***/ }),
