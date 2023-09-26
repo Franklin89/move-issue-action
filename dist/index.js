@@ -6777,8 +6777,13 @@ async function run() {
                 const columns = await queries.getColumnsForProject(node.node.project.id, github_token);
                 const statusField = columns.node.fields.nodes.find((node) => node.name === 'Status'); // TODO: Make this configurable
                 const statusFieldValue = statusField.options.find((node) => node.name.startsWith('Done')); // TODO: Make this configurable
-                await mutations.moveCardToColumn(node.node.project.id, node.node.id, statusField.id, statusFieldValue.id, github_token);
-                core.info(`Moved issue #${issue} to column: ${statusFieldValue.name} in project ${node.node.project.title} (${node.node.project.id})`);
+                if (statusField && statusFieldValue) {
+                    await mutations.moveCardToColumn(node.node.project.id, node.node.id, statusField.id, statusFieldValue.id, github_token);
+                    core.info(`Moved issue #${issue} to column: ${statusFieldValue.name} in project ${node.node.project.title} (${node.node.project.id})`);
+                }
+                else {
+                    core.info(`Invalid statusField or statusFieldValue for project ${node.node.project.title} (${node.node.project.id})`);
+                }
             }
         }
     }

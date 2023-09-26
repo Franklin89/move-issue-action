@@ -101,17 +101,23 @@ export async function run(): Promise<void> {
           node.name.startsWith('Done')
         ) // TODO: Make this configurable
 
-        await mutations.moveCardToColumn(
-          node.node.project.id,
-          node.node.id,
-          statusField.id,
-          statusFieldValue.id,
-          github_token
-        )
+        if (statusField && statusFieldValue) {
+          await mutations.moveCardToColumn(
+            node.node.project.id,
+            node.node.id,
+            statusField.id,
+            statusFieldValue.id,
+            github_token
+          )
 
-        core.info(
-          `Moved issue #${issue} to column: ${statusFieldValue.name} in project ${node.node.project.title} (${node.node.project.id})`
-        )
+          core.info(
+            `Moved issue #${issue} to column: ${statusFieldValue.name} in project ${node.node.project.title} (${node.node.project.id})`
+          )
+        } else {
+          core.info(
+            `Invalid statusField or statusFieldValue for project ${node.node.project.title} (${node.node.project.id})`
+          )
+        }
       }
     }
   } catch (error) {
